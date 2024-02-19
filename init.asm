@@ -6,9 +6,9 @@
 ;===================================================================;
 
 
-;=============================================
-; Sega Megadrive ROM header
-;=============================================
+;============================================;
+;		Sega Megadrive ROM header			 ;
+;============================================;
 	dc.l   0x00FFE000      ; Initial stack pointer value
 	dc.l   EntryPoint      ; Start of program
 	dc.l   Exception       ; Bus error
@@ -96,17 +96,17 @@
 
 EntryPoint:           ; Entry point address set in ROM header
 
-	; ************************************
-	; Test reset button
-	; ************************************
+	;===================;
+	; Test reset button	;
+	;===================;
 	tst.w 0x00A10008  ; Test mystery reset (expansion port reset?)
 	bne Main          ; Branch if Not Equal (to zero) - to Main
 	tst.w 0x00A1000C  ; Test reset button
 	bne Main          ; Branch if Not Equal (to zero) - to Main
    
-	; ************************************
-	; Clear RAM
-	; ************************************
+	;===========;
+	; Clear RAM ;
+	;===========;
 	move.l #0x00000000, d0     ; Place a 0 into d0, ready to copy to each longword of RAM
 	move.l #0x00000000, a0     ; Starting from address 0x0, clearing backwards
 	move.l #0x00003FFF, d1     ; Clearing 64k's worth of longwords (minus 1, for the loop to be correct)
@@ -114,18 +114,18 @@ EntryPoint:           ; Entry point address set in ROM header
 	move.l d0, -(a0)           ; Decrement the address by 1 longword, before moving the zero from d0 to it
 	dbra d1, @Clear            ; Decrement d0, repeat until depleted
 	
-	; ************************************
-	; Write TMSS
-	; ************************************
+	;============;
+	; Write TMSS ;
+	;============;
 	move.b 0x00A10001, d0      ; Move Megadrive hardware version to d0
 	andi.b #0x0F, d0           ; The version is stored in last four bits, so mask it with 0F
 	beq @Skip                  ; If version is equal to 0, skip TMSS signature
 	move.l #'SEGA', 0x00A14000 ; Move the string "SEGA" to 0xA14000
 	@Skip:
 
-	; ************************************
-	; Init Z80
-	; ************************************
+	;==========;
+	; Init Z80 ;
+	;==========;
 	move.w #0x0100, 0x00A11100    ; Request access to the Z80 bus, by writing 0x0100 into the BUSREQ port
 	move.w #0x0100, 0x00A11200    ; Hold the Z80 in a reset state, by writing 0x0100 into the RESET port
 
@@ -143,18 +143,18 @@ EntryPoint:           ; Entry point address set in ROM header
 	move.w #0x0000, 0x00A11200    ; Release reset state
 	move.w #0x0000, 0x00A11100    ; Release control of bus
 
-	; ************************************
-	; Init PSG
-	; ************************************
+	;==========;
+	; Init PSG ;
+	;==========;
 	move.l #PSGData, a0        ; Load address of PSG data into a0
 	move.l #0x03, d0           ; 4 bytes of data
 	@CopyPSG:
 	move.b (a0)+, 0x00C00011   ; Copy data to PSG RAM
 	dbra d0, @CopyPSG
 	
-	; ************************************
-	; Init VDP
-	; ************************************
+	;================;
+	; Initialize VDP ;
+	;================;
 	move.l #VDPRegisters, a0   ; Load address of register table into a0
 	move.l #0x18, d0           ; 24 registers to write
 	move.l #0x00008000, d1     ; 'Set register 0' command (and clear the rest of d1 ready)
@@ -165,16 +165,16 @@ EntryPoint:           ; Entry point address set in ROM header
 	add.w #0x0100, d1          ; Increment register #
 	dbra d0, @CopyVDP
 
-	; ************************************
-	; Init control ports
-	; ************************************
+	;=============================;
+	; Initialize controller ports ;
+	;=============================;
 	move.b #0x00, 0x000A10009  ; Controller port 1 CTRL
 	move.b #0x00, 0x000A1000B  ; Controller port 2 CTRL
 	move.b #0x00, 0x000A1000D  ; EXP port CTRL
 
-	; ************************************
-	; Cleanup
-	; ************************************
+	;==================================;
+	; Cleanup before "jumping" to main ;
+	;==================================;
 	move.l #0x00FF0000, a0     ; Move address of first byte of ram (contains zero, RAM has been cleared) to a0
 	movem.l (a0), d0-d7/a1-a7  ; Multiple move zero to all registers
 	move.l #0x00000000, a0     ; Clear a0
@@ -182,11 +182,16 @@ EntryPoint:           ; Entry point address set in ROM header
 	; Init status register (no trace, A7 is Interrupt Stack Pointer, no interrupts, clear condition code bits)
 	move #0x2700, sr
 
-	; ************************************
-	; Main
-	; ************************************
+	;======;
+	; Main ;
+	;======;
 Main:
 	jmp __main ; Begin external main
+
+
+;=====================================================================================;
+; The data can either be initialised above or below the code, but not right after it. ;
+;=====================================================================================;
 
 HBlankInterrupt:
 VBlankInterrupt:

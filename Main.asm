@@ -50,9 +50,9 @@ __main:
    move.w #0x870E, 0x00C00004  ; Set background colour to palette 0, colour 8
    ;The last digit of #0x870_, '_' is the colour we choose.
 
-;========================================;
-; Displaying the text - Just like Easy68K;
-;========================================;
+;=========================================;
+; Displaying the text - Just like Easy68K ;
+;=========================================;
 	lea		StringTest, a0		 ; String address
 	move.l	#PixelFontTileID, d0 ; First tile id
 	move.w	#0x0501, d1			 ; XY (5, 1)

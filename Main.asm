@@ -1,3 +1,5 @@
+	rsset $00ff0000
+_player1_memory: rs.b 1 ;8 Bits/1 Byte
 ;==================================================================================================;
 ; Title      : Hello World in Sega Mega Drive/Genesis
 ; Date       : 14.02.2024
@@ -6,16 +8,18 @@
 
 	
 	include 'init.asm'
+    ;include 'checkSum.asm'	;Not necessary now but is a strech goal
 	include 'textStuff.asm'
-	include 'vdpData.asm'
+	include 'blackboard.asm'
+	include 'macros.asm'
 
 __main:
 
 ;Enable the autoincrement	
-   move.w #0x8F02, 0x00C00004   ; Set autoincrement to 2 bytes
+   move.w #0x8F02, vdp_control   ; Set autoincrement to 2 bytes
 
 ;Writing the data
-   move.l #0xC0000003, 0x00C00004 ; Set up VDP to write to CRAM address 0x0000
+   move.l #0xC0000003, vdp_control ; Set up VDP to write to CRAM address 0x0000
 
 ;Move the background palette data into VDP'S Data port
    lea BGPalette, a0          ; Load address of BGPalette into a0
@@ -47,8 +51,41 @@ __main:
 ;================================;
 ; Changing the background colour ;
 ;================================;
-   move.w #0x870E, 0x00C00004  ; Set background colour to palette 0, colour 8
+   move.w #0x870E, vdp_control  ; Set background colour to palette 0, colour _
    ;The last digit of #0x870_, '_' is the colour we choose.
+
+;=====================;
+; Read gamepad inputs ;
+;=====================;
+
+	FastPausez80    ; Pause Z80 for a bit
+
+    move.b  #$40, (player1_data_port)  ; Read the first row of inputs (D-Pad, B and C)
+    nop                 ; These are used to wait for a bit
+    nop
+    nop
+    nop
+    move.b  (player1_data_port), d2
+    
+    move.b  #$00, (player1_data_port)  ; Read the second row of inputs (A and Start)
+    nop                 ; These are used to wait for a bit
+    nop
+    nop
+    nop
+    move.b  (player1_data_port), d3
+
+
+	ResumeZ80        ; Z80 can run now
+    and.b   #$3F, d2    ; Rearrange bits
+    and.b   #$30, d3    ; into SACBRLDU
+    lsl.b   #2, d3
+    or.b    d3, d2 ; combines first row and second row into one
+	move.b	d3, _player1_memory
+
+    ; Now d3 contains all the buttons and is loaded into _player1_memory
+    ; 1 = pressed and 0 = released
+
+
 
 ;=========================================;
 ; Displaying the text - Just like Easy68K ;
@@ -57,7 +94,9 @@ __main:
 	move.l	#PixelFontTileID, d0 ; First tile id
 	move.w	#0x0501, d1			 ; XY (5, 1)
 	move.l	#0x1, d2			 ; Palette 1
+
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
 
 
 ;====================================================================;
@@ -100,40 +139,6 @@ ColourPalette:
 	dc.w 0x0000
 	dc.w 0x0000
 
-;	dc.w 0x0000 ; Colour 0 - Transparent
-;	dc.w 0x00E0 ; Colour 1 - Green
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-
-;	dc.w 0x0000 ; Colour 0 - Transparent
-;	dc.w 0x0E00 ; Colour 1 - Blue
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-;	dc.w 0x0000
-
 	dc.w 0x0000 ; Colour 0 - Transparent
 	dc.w 0x0EEE ; Colour 1 - White
 	dc.w 0x0000
@@ -155,6 +160,9 @@ ColourPalette:
 
 StringTest:
 	dc.b "HELLO WORLD!",0
+Test:
+	dc.b "ITS WORKING",0
+
 
 	include 'pixelFont.asm'
 

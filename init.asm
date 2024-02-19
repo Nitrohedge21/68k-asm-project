@@ -80,7 +80,7 @@
 	dc.b "SONIC 4 REAL!!                                  "	; International name
 	dc.b "GM XXXXXXXX-XX"									; Version number
 	dc.w 0x0000												; Checksum
-	dc.b "JUE               "								; I/O support
+	dc.b "J               "									; I/O - Controller support (Check Genesis Manual to see the other supported controllers)
 	dc.l 0x00000000											; Start address of ROM
 	dc.l __endMain											; End address of ROM
 	dc.l 0x00FF0000											; Start address of RAM
@@ -168,8 +168,8 @@ EntryPoint:           ; Entry point address set in ROM header
 	;=============================;
 	; Initialize controller ports ;
 	;=============================;
-	move.b #0x00, 0x000A10009  ; Controller port 1 CTRL
-	move.b #0x00, 0x000A1000B  ; Controller port 2 CTRL
+	move.b #0x00, player1_control_port  ; P1 control port
+	move.b #0x00, player2_control_port  ; P2 control port
 	move.b #0x00, 0x000A1000D  ; EXP port CTRL
 
 	;==================================;

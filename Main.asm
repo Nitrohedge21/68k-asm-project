@@ -7,11 +7,12 @@ _player1_memory: rs.b 1 ;8 Bits/1 Byte
 ;==================================================================================================;
 
 	
-	include 'init.asm'
-    ;include 'checkSum.asm'	;Not necessary now but is a strech goal
-	include 'textStuff.asm'
-	include 'blackboard.asm'
-	include 'macros.asm'
+	include 'common\init.asm'
+    ;include 'common\checkSum.asm'	;Not necessary now but is a strech goal
+	include 'common\textStuff.asm'
+	include 'common\blackboard.asm'
+	include 'common\macros.asm'
+	include 'common\pixelFont.asm'
 
 __main:
 
@@ -58,7 +59,7 @@ __main:
 ; Read gamepad inputs ;
 ;=====================;
 
-	FastPausez80    ; Pause Z80 for a bit
+	FastPauseZ80    ; Pause Z80 for a bit
 
     move.b  #$40, (player1_data_port)  ; Read the first row of inputs (D-Pad, B and C)
     nop                 ; These are used to wait for a bit
@@ -77,7 +78,7 @@ __main:
 
 	ResumeZ80        ; Z80 can run now
     and.b   #$3F, d2    ; Rearrange bits
-    and.b   #$30, d3    ; into SACBRLDU
+    and.b   #$30, d3    ; into SACBRLDU - Start,A,C,B,Right,Left,Down,Up
     lsl.b   #2, d3
     or.b    d3, d2 ; combines first row and second row into one
 	move.b	d3, _player1_memory
@@ -96,7 +97,6 @@ __main:
 	move.l	#0x1, d2			 ; Palette 1
 
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
-
 
 
 ;====================================================================;
@@ -162,8 +162,5 @@ StringTest:
 	dc.b "HELLO WORLD!",0
 Test:
 	dc.b "ITS WORKING",0
-
-
-	include 'pixelFont.asm'
 
 __endMain:

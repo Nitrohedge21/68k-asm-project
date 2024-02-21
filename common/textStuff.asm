@@ -1,4 +1,4 @@
-	include 'asciiData.asm'
+	include 'common\asciiData.asm'
 
 	; Align 8 bytes
 	nop 0,8

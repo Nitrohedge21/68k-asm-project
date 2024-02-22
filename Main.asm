@@ -1,5 +1,6 @@
 	rsset $00ff0000
 _player1_memory: rs.b 1 ;8 Bits/1 Byte
+_player2_memory: rs.b 1 ;8 Bits/1 Byte
 ;==================================================================================================;
 ; Title      : Hello World in Sega Mega Drive/Genesis
 ; Date       : 14.02.2024
@@ -13,6 +14,8 @@ _player1_memory: rs.b 1 ;8 Bits/1 Byte
 	include 'common\blackboard.asm'
 	include 'common\macros.asm'
 	include 'common\pixelFont.asm'
+	include 'common\gamepad.asm'
+	include 'common\vblankHandler.asm'
 
 __main:
 
@@ -54,39 +57,38 @@ __main:
 ;================================;
    move.w #0x870E, vdp_control  ; Set background colour to palette 0, colour _
    ;The last digit of #0x870_, '_' is the colour we choose.
-
+GameLoop:
 ;=====================;
 ; Read gamepad inputs ;
 ;=====================;
 
 	FastPauseZ80    ; Pause Z80 for a bit
 
-    move.b  #$40, (player1_data_port)  ; Read the first row of inputs (D-Pad, B and C)
-    nop                 ; These are used to wait for a bit
-    nop
-    nop
-    nop
-    move.b  (player1_data_port), d2
-    
-    move.b  #$00, (player1_data_port)  ; Read the second row of inputs (A and Start)
-    nop                 ; These are used to wait for a bit
-    nop
-    nop
-    nop
-    move.b  (player1_data_port), d3
+	jsr ReadGamepadP1
 
+	jsr    WaitVBlankStart ; Wait for start of vblank
 
-	ResumeZ80        ; Z80 can run now
-    and.b   #$3F, d2    ; Rearrange bits
-    and.b   #$30, d3    ; into SACBRLDU - Start,A,C,B,Right,Left,Down,Up
-    lsl.b   #2, d3
-    or.b    d3, d2 ; combines first row and second row into one
-	move.b	d3, _player1_memory
+	btst	#pad_button_up, d3
+	bne		@NotUp
+	move.w #0x870A, vdp_control
+	@NotUp:
 
-    ; Now d3 contains all the buttons and is loaded into _player1_memory
-    ; 1 = pressed and 0 = released
+	btst	#pad_button_down, d3
+	bne		@NotDown
+	move.w #0x870B, vdp_control
+	@NotDown:
 
+	btst	#pad_button_left, d3
+	bne		@NotLeft
+	move.w #0x870C, vdp_control
+	@NotLeft:
 
+	btst	#pad_button_right, d3
+	bne		@NotRight
+	move.w #0x870D, vdp_control
+	@NotRight:
+
+	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
 ;=========================================;
 ; Displaying the text - Just like Easy68K ;
@@ -94,9 +96,11 @@ __main:
 	lea		StringTest, a0		 ; String address
 	move.l	#PixelFontTileID, d0 ; First tile id
 	move.w	#0x0501, d1			 ; XY (5, 1)
-	move.l	#0x1, d2			 ; Palette 1
+	move.l	#0x2, d2			 ; Palette 1
 
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
+	jmp	   GameLoop
 
 
 ;====================================================================;

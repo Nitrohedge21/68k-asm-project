@@ -1,3 +1,6 @@
+hblank_counter        equ 0x00FF0000
+vblank_counter        equ 0x00FF0004
+
 ;===================;
 ;     VDP stuff     ;
 ;===================;
@@ -26,17 +29,10 @@ pad_button_c			equ 0x5
 pad_button_start		equ 0xD
 ;the data below are from BigEvilCorp.
 
-pad_data_a				equ 0x00A10003
-pad_data_b				equ 0x00A10005
-pad_data_c				equ 0x00A10007
-pad_ctrl_a				equ 0x00A10009
-pad_ctrl_b				equ 0x00A1000B
-pad_ctrl_c				equ 0x00A1000D
-
-player1_control_port	equ	$A10009
-player2_control_port	equ	$A1000B
-player1_data_port		equ	$A10003
-player2_data_port		equ	$A10005
+player1_control_port	equ	0x00A10009
+player2_control_port	equ	0x00A1000B	;these had same values with pad_data & pad_control
+player1_data_port		equ	0x00A10003
+player2_data_port		equ	0x00A10005
 
 just_pressed			equ	pressed_now and (not pressed_before)
 just_released			equ	pressed_before and (not pressed_now)

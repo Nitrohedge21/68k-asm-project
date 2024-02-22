@@ -194,8 +194,18 @@ Main:
 ;=====================================================================================;
 
 HBlankInterrupt:
+   rte   ; Return
+
 VBlankInterrupt:
-   rts   ; Return from Subroutine
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+   addi.l #0x1, vblank_counter    ; Increment vinterrupt counter
+   rte
 
 Exception:
    stop #$2700 ; Halt CPU

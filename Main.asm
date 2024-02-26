@@ -11,6 +11,7 @@ _player2_memory: rs.b 1 ;8 Bits/1 Byte
 	include 'common\init.asm'
     ;include 'common\checkSum.asm'	;Not necessary now but is a strech goal
 	include 'common\textStuff.asm'
+	include 'common\spriteStuff.asm'
 	include 'common\blackboard.asm'
 	include 'common\macros.asm'
 	include 'common\pixelFont.asm'
@@ -49,6 +50,20 @@ __main:
     move.l    #PixelFontSizeT, d1  ; Move number of characters (font size in tiles) to d1
     jsr        LoadFont            ; Jump to subroutine
 
+;=====================;
+; Loading the sprites ;
+;=====================;
+	lea		   SpriteData, a0
+	move.l    #SpriteDataVRAM, d0   ; Move VRAM dest address to d0
+    move.l    #SpriteDataSizeT, d1  ; Move number of characters (font size in tiles) to d1
+    jsr        LoadSprite            ; Jump to subroutine
+
+; ************************************
+; Load sprite descriptors
+; ************************************
+	lea     SpriteDescs, a0		; Sprite table data
+	move.w  #0x1, d0			; 1 sprite
+	jsr     LoadSpriteTables
 
 ;Everything should be set up correctly by this point so we test it by using the code below 	
 
@@ -96,9 +111,12 @@ GameLoop:
 	lea		StringTest, a0		 ; String address
 	move.l	#PixelFontTileID, d0 ; First tile id
 	move.w	#0x0501, d1			 ; XY (5, 1)
-	move.l	#0x2, d2			 ; Palette 1
-
+	move.l	#0x1, d2			 ; Palette 1
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
+;===============================;
+; Hopefully displays the sprite ;
+;===============================;
 
 	jmp	   GameLoop
 
@@ -128,7 +146,7 @@ BGPalette:
 ColourPalette:
 	dc.w 0x0000 ; Colour 0 - Transparent
 	dc.w 0x000E ; Colour 1 - Red
-	dc.w 0x0000
+	dc.w 0x0000 
 	dc.w 0x0000
 	dc.w 0x0000
 	dc.w 0x0000
@@ -160,11 +178,23 @@ ColourPalette:
 	dc.w 0x0000
 	dc.w 0x0000
 
-;List of variables to display on the screen
+	; ************************************
+	; Sprite descriptor structs
+	; ************************************
+SpriteDescs:
+    dc.w 0x0090        ; Y coord (+ 128)
+    dc.b %00001111     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
+    dc.b 0x01          ; Index of next sprite (linked list)
+    dc.b 0x00          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7)
+    dc.b SpriteDataTileID ; Index of first tile
+    dc.w 0x0115        ; X coord (+ 128)
+
+	;after reaching 10, it adds + 6 to the coord value for some reason
+	; dc.w 0x0010 = 10 + 6	/ dc.w 0x0020 = 20 + 12 / dc.w 0x0050 = 50 + 30
+	; need to start from 80 in order to show up in the screen
+
 
 StringTest:
 	dc.b "HELLO WORLD!",0
-Test:
-	dc.b "ITS WORKING",0
 
 __endMain:

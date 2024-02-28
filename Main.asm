@@ -183,7 +183,7 @@ ColourPalette:
 	; ************************************
 SpriteDescs:
     dc.w 0x0090        ; Y coord (+ 128)
-    dc.b %00001111     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
+    dc.b %00000101     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
     dc.b 0x01          ; Index of next sprite (linked list)
     dc.b 0x00          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7)
     dc.b SpriteDataTileID ; Index of first tile

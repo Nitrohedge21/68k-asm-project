@@ -11,7 +11,7 @@ _player2_memory: rs.b 1 ;8 Bits/1 Byte
 	include 'common\init.asm'
     ;include 'common\checkSum.asm'	;Not necessary now but is a strech goal
 	include 'common\textStuff.asm'
-	include 'common\spriteStuff.asm'
+	include 'common\spriteFunctions.asm'
 	include 'common\blackboard.asm'
 	include 'common\macros.asm'
 	include 'common\pixelFont.asm'
@@ -42,68 +42,50 @@ __main:
 	move.l (a0)+, vdp_data ; Move data to VDP data port, and increment source address
 	dbra d0, @ColourLoop
 
-;==================;
+;===================;
 ; Loading the font ;
-;==================;
+;=================;
     lea        PixelFont, a0       ; Move font address to a0
     move.l    #PixelFontVRAM, d0   ; Move VRAM dest address to d0
     move.l    #PixelFontSizeT, d1  ; Move number of characters (font size in tiles) to d1
     jsr        LoadFont            ; Jump to subroutine
 
-;=====================;
+;======================;
 ; Loading the sprites ;
-;=====================;
+;====================;
 	lea		   SpriteData, a0
 	move.l    #SpriteDataVRAM, d0   ; Move VRAM dest address to d0
     move.l    #SpriteDataSizeT, d1  ; Move number of characters (font size in tiles) to d1
     jsr        LoadSprite            ; Jump to subroutine
 
-; ************************************
-; Load sprite descriptors
-; ************************************
+;==========================;
+; Load sprite descriptors ;
+;========================;
 	lea     SpriteDescs, a0		; Sprite table data
 	move.w  #0x1, d0			; 1 sprite
 	jsr     LoadSpriteTables
 
-;Everything should be set up correctly by this point so we test it by using the code below 	
+;========================================;
+; Set starting positions of the sprites ;
+;======================================;
 
-;================================;
-; Changing the background colour ;
-;================================;
+	move.w  #0x0,  d0	  ; Sprite ID - First sprite
+	move.w  #0xB0, d1	  ; X coord
+	jsr     SetSpritePosX ; Set X pos
+	move.w  #0xB0, d1	  ; Y coord
+	jsr     SetSpritePosY ; Set Y pos
+
+	move.l  #0x90, d4     ; X pos
+	move.l  #0x110, d5     ; Y pos
+
+;========================================;
+; Setting the default background colour ;
+;======================================;
    move.w #0x870E, vdp_control  ; Set background colour to palette 0, colour _
    ;The last digit of #0x870_, '_' is the colour we choose.
+
+;Everything should be set up correctly by this point so we start the game loop - Ersan 	
 GameLoop:
-;=====================;
-; Read gamepad inputs ;
-;=====================;
-
-	FastPauseZ80    ; Pause Z80 for a bit
-
-	jsr ReadGamepadP1
-
-	jsr    WaitVBlankStart ; Wait for start of vblank
-
-	btst	#pad_button_up, d3
-	bne		@NotUp
-	move.w #0x870A, vdp_control
-	@NotUp:
-
-	btst	#pad_button_down, d3
-	bne		@NotDown
-	move.w #0x870B, vdp_control
-	@NotDown:
-
-	btst	#pad_button_left, d3
-	bne		@NotLeft
-	move.w #0x870C, vdp_control
-	@NotLeft:
-
-	btst	#pad_button_right, d3
-	bne		@NotRight
-	move.w #0x870D, vdp_control
-	@NotRight:
-
-	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
 ;=========================================;
 ; Displaying the text - Just like Easy68K ;
@@ -114,9 +96,58 @@ GameLoop:
 	move.l	#0x1, d2			 ; Palette 1
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
 
-;===============================;
-; Hopefully displays the sprite ;
-;===============================;
+	FastPauseZ80    ; Pause Z80 for a bit
+
+;======================;
+; Read gamepad inputs ;
+;=====================;
+	jsr ReadGamepadP1
+
+	move.l  #0x1, d6	;The "movement speed"
+
+	btst	#pad_button_up, d0
+	bne		@NotUp
+	sub.w   d6, d5     
+	@NotUp:
+
+	btst	#pad_button_down, d0
+	bne		@NotDown
+	add.w   d6, d5 
+	@NotDown:
+
+	btst	#pad_button_left, d0
+	bne		@NotLeft
+	sub.w   d6, d4 
+	@NotLeft:
+
+	btst	#pad_button_right, d0
+	bne		@NotRight
+	add.w   d6, d4 
+	@NotRight:
+
+;The A button does not work as intended for some reason. Need to figure out why that is
+
+	btst	#pad_button_b, d0
+	bne		@NotB		; This is configured to be X in gens emulator
+	move.w #0x870B, vdp_control
+	@NotB:
+
+	btst	#pad_button_c, d0
+	bne		@NotC		; This is configured to be C in gens emulator
+	move.w #0x870C, vdp_control
+	@NotC:
+
+	jsr    WaitVBlankStart ; Wait for start of vblank  
+	; Anything related to visuals need to be updated during vblank pause. - Ersan
+	move.w  #0x0,  d0	  ; Sprite ID
+	move.w  d4, d1	      ; X coord
+	jsr     SetSpritePosX ; Set X pos
+	move.w  d5, d1	      ; Y coord
+	jsr     SetSpritePosY ; Set Y pos
+
+	;add.w   #0x01, d5	Can potentially add gravity to the character by doing something like this
+
+	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
 	jmp	   GameLoop
 
@@ -178,14 +209,14 @@ ColourPalette:
 	dc.w 0x0000
 	dc.w 0x0000
 
-	; ************************************
-	; Sprite descriptor structs
-	; ************************************
+	;==================================;
+	; Sprite Table Data/Descriptor(?) ;
+	;================================;
 SpriteDescs:
     dc.w 0x0090        ; Y coord (+ 128)
     dc.b %00000101     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
     dc.b 0x01          ; Index of next sprite (linked list)
-    dc.b 0x00          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7)
+    dc.b %0001000          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7) | Horizontal - 01, Vertical 10, Vert. & Hori. - 11 |
     dc.b SpriteDataTileID ; Index of first tile
     dc.w 0x0115        ; X coord (+ 128)
 

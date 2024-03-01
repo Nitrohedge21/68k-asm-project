@@ -31,3 +31,36 @@ LoadSprite:
 	dbra	d0, @AttrCopy
 	
 	rts
+
+	SetSpritePosX:
+	; Set sprite X position
+	; d0 (b) - Sprite ID
+	; d1 (w) - X coord
+	clr.l	d3						; Clear d3
+	move.b	d0, d3					; Move sprite ID to d3
+	
+	mulu.w	#0x8, d3				; Sprite array offset
+	add.b	#0x6, d3				; X coord offset
+	swap	d3						; Move to upper word
+	add.l	#vdp_write_sprite_table, d3	; Add to sprite attr table (at 0xD400)
+	
+	move.l	d3, vdp_control			; Set dest address
+	move.w	d1, vdp_data			; Move X pos to data port
+	
+	rts
+
+	SetSpritePosY:
+	; Set sprite Y position
+	; d0 (b) - Sprite ID
+	; d1 (w) - Y coord
+	clr.l	d3						; Clear d3
+	move.b	d0, d3					; Move sprite ID to d3
+	
+	mulu.w	#0x8, d3				; Sprite array offset
+	swap	d3						; Move to upper word
+	add.l	#vdp_write_sprite_table, d3	; Add to sprite attr table (at 0xD400)
+	
+	move.l	d3, vdp_control			; Set dest address
+	move.w	d1, vdp_data			; Move X pos to data port
+	
+	rts

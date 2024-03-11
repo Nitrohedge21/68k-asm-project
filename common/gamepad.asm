@@ -5,19 +5,19 @@
 ;So each data register seemingly can be used for multiple things
 
 ReadGamepadP1:
-    move.b  #$40, player1_data_port  ; Read the first row of inputs (D-Pad, B and C)
+    move.b  #$40, (player1_data_port)  ; Read the first row of inputs (D-Pad, B and C)
     nop                 ; These are used to wait for a bit
     nop
     nop
     nop
-    move.b  player1_data_port, d0
+    move.b  (player1_data_port), d0
     
-    move.b  #$00, player1_data_port  ; Read the second row of inputs (A and Start)
+    move.b  #$00, (player1_data_port)  ; Read the second row of inputs (A and Start)
     nop                 ; These are used to wait for a bit
     nop
     nop
     nop
-    move.b  player1_data_port, d1
+    move.b  (player1_data_port), d1
 
 
 	ResumeZ80        ; Z80 can run now
@@ -25,7 +25,7 @@ ReadGamepadP1:
     and.b   #$30, d1    ; into SACBRLDU - Start,A,C,B,Right,Left,Down,Up
     lsl.b   #2, d1
     or.b    d1, d0 ; combines first row and second row into one
-	move.b	d0, _player1_memory
+	move.b	d0, _player1_memory ; This loads the input data into the player 1's memory
 	rts
 
     ; Now d contains all the buttons and is loaded into _player1_memory
@@ -61,4 +61,3 @@ ReadGamepadP1:
 ;
 ;    ; Now d3 contains all the buttons and is loaded into _player1_memory
 ;    ; 1 = pressed and 0 = released
-

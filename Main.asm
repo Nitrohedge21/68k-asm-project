@@ -2,9 +2,9 @@
 _player1_memory: rs.b 1 ;8 Bits/1 Byte
 _player2_memory: rs.b 1 ;8 Bits/1 Byte
 ;==================================================================================================;
-; Title      : Hello World in Sega Mega Drive/Genesis
-; Date       : 14.02.2024
-; Description: This code is made by following BigEvilCorp's tutorial to get the gist of the console
+; Title      : CT6TARPS Artefact
+; Date       : 08.03.2024
+; Description: A project that I have been making for an assessment of mine.
 ;==================================================================================================;
 
 	
@@ -103,49 +103,71 @@ GameLoop:
 ;=====================;
 	jsr ReadGamepadP1
 
-	move.l  #0x1, d6	;The "movement speed"
-
-	btst	#pad_button_up, d0
+	btst	#pad_button_up, _player1_memory
 	bne		@NotUp
-	sub.w   d6, d5     
+	sub.w   #jump_force, d5     
 	@NotUp:
 
-	btst	#pad_button_down, d0
+	btst	#pad_button_down, _player1_memory
 	bne		@NotDown
-	add.w   d6, d5 
+	;add.w   #jump_force, d5 
 	@NotDown:
 
-	btst	#pad_button_left, d0
+	; TODO - Try to figure out how to flip the sprite based on it's direction
+	btst	#pad_button_left, _player1_memory
 	bne		@NotLeft
-	sub.w   d6, d4 
+	sub.w   #movement_speed, d4 
 	@NotLeft:
 
-	btst	#pad_button_right, d0
+	btst	#pad_button_right, _player1_memory
 	bne		@NotRight
-	add.w   d6, d4 
+	add.w   #movement_speed, d4 
 	@NotRight:
 
-;The A button does not work as intended for some reason. Need to figure out why that is
-
-	btst	#pad_button_b, d0
+;The A and start buttons do not work for some reason. Need to figure out why that is
+	
+	btst	#pad_button_a, _player1_memory
+	bne		@NotA		; This is configured to be Z in gens emulator
+	move.w #0x870D, vdp_control
+	@NotA:
+	
+	btst	#pad_button_b, _player1_memory
 	bne		@NotB		; This is configured to be X in gens emulator
 	move.w #0x870B, vdp_control
 	@NotB:
 
-	btst	#pad_button_c, d0
+	btst	#pad_button_c, _player1_memory
 	bne		@NotC		; This is configured to be C in gens emulator
 	move.w #0x870C, vdp_control
 	@NotC:
 
+
+	;===============================================;
+	;  Adds a fake platform that blocks the player  ;
+	;  from going downwards after a certain point   ;
+	;===============================================;
+
+	cmp		#0x110, d5
+	blt		@NotBelowFloor
+	sub.w   #gravity, d5	; This checks if the player is at 110 on y position. If so, applies force to push back it up
+	move.l  #0x110, d5		; This sets the player's position and stops the stuttering issue.
+	@NotBelowFloor:				
+
+	add.w   #0x1, d5		; Can potentially add gravity to the character by doing something like this
+
+
+	;====================================================;
+	; The code below handles the position during vblank ;
+	;===================================================;
+
 	jsr    WaitVBlankStart ; Wait for start of vblank  
+
 	; Anything related to visuals need to be updated during vblank pause. - Ersan
 	move.w  #0x0,  d0	  ; Sprite ID
 	move.w  d4, d1	      ; X coord
 	jsr     SetSpritePosX ; Set X pos
 	move.w  d5, d1	      ; Y coord
 	jsr     SetSpritePosY ; Set Y pos
-
-	;add.w   #0x01, d5	Can potentially add gravity to the character by doing something like this
 
 	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
@@ -214,7 +236,7 @@ ColourPalette:
 	;================================;
 SpriteDescs:
     dc.w 0x0090        ; Y coord (+ 128)
-    dc.b %00000101     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
+    dc.b %00001111     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
     dc.b 0x01          ; Index of next sprite (linked list)
     dc.b %0001000          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7) | Horizontal - 01, Vertical 10, Vert. & Hori. - 11 |
     dc.b SpriteDataTileID ; Index of first tile

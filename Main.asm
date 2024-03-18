@@ -90,9 +90,27 @@ GameLoop:
 ;=========================================;
 ; Displaying the text - Just like Easy68K ;
 ;=========================================;
-	lea		StringTest, a0		 ; String address
+	lea		String1, a0		 ; String address
 	move.l	#PixelFontTileID, d0 ; First tile id
-	move.w	#0x0501, d1			 ; XY (5, 1)
+	move.w	#0x0001, d1			 ; XY (5, 1)
+	move.l	#0x1, d2			 ; Palette 1
+	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
+	lea		String2, a0		 ; String address
+	move.l	#PixelFontTileID, d0 ; First tile id
+	move.w	#0x1001, d1			 ; XY (5, 1)
+	move.l	#0x1, d2			 ; Palette 1
+	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
+	lea		String3, a0		 ; String address
+	move.l	#PixelFontTileID, d0 ; First tile id
+	move.w	#0x2001, d1			 ; XY (5, 1)
+	move.l	#0x1, d2			 ; Palette 1
+	jsr		DrawTextPlaneA       ; Call draw text subroutine
+
+	lea		String4, a0		 ; String address
+	move.l	#PixelFontTileID, d0 ; First tile id
+	move.w	#0x3001, d1			 ; XY (5, 1)
 	move.l	#0x1, d2			 ; Palette 1
 	jsr		DrawTextPlaneA       ; Call draw text subroutine
 
@@ -102,6 +120,9 @@ GameLoop:
 ; Read gamepad inputs ;
 ;=====================;
 	jsr ReadGamepadP1
+	jsr ReadGamepadP2
+
+;Check player 1's inputs
 
 	btst	#pad_button_up, _player1_memory
 	bne		@NotUp
@@ -112,19 +133,19 @@ GameLoop:
 	bne		@NotDown
 	;add.w   #jump_force, d5 
 	@NotDown:
-
+	
 	; TODO - Try to figure out how to flip the sprite based on it's direction
 	btst	#pad_button_left, _player1_memory
 	bne		@NotLeft
-	sub.w   #movement_speed, d4 
+	sub.w   #movement_speed, d4
+	sub.w   #movement_speed, d6    
 	@NotLeft:
-
+	
 	btst	#pad_button_right, _player1_memory
 	bne		@NotRight
-	add.w   #movement_speed, d4 
+	add.w   #movement_speed, d4
+	add.w   #movement_speed, d6    
 	@NotRight:
-
-;The A and start buttons do not work for some reason. Need to figure out why that is
 	
 	btst	#pad_button_a, _player1_memory
 	bne		@NotA		; This is configured to be Z in gens emulator
@@ -135,11 +156,23 @@ GameLoop:
 	bne		@NotB		; This is configured to be X in gens emulator
 	move.w #0x870B, vdp_control
 	@NotB:
-
+	
 	btst	#pad_button_c, _player1_memory
 	bne		@NotC		; This is configured to be C in gens emulator
 	move.w #0x870C, vdp_control
 	@NotC:
+
+; Check player 2's inputs
+
+	;btst	#pad_button_left, _player2_memory
+	;bne		@NotLeftP2
+	;sub.w   #movement_speed, d6              ; Update H scroll value
+	;@NotLeftP2:
+	;
+	;btst	#pad_button_right, _player2_memory
+	;bne		@NotRightP2
+	;add.w   #movement_speed, d6              ; Update H scroll value
+	;@NotRightP2:
 
 
 	;===============================================;
@@ -155,7 +188,6 @@ GameLoop:
 
 	add.w   #0x1, d5		; Can potentially add gravity to the character by doing something like this
 
-
 	;====================================================;
 	; The code below handles the position during vblank ;
 	;===================================================;
@@ -168,6 +200,9 @@ GameLoop:
 	jsr     SetSpritePosX ; Set X pos
 	move.w  d5, d1	      ; Y coord
 	jsr     SetSpritePosY ; Set Y pos
+
+	move.l  #vdp_write_hscroll, vdp_control ; Write to start of hscroll data
+	move.w  d6, vdp_data                    ; Write hscroll value
 
 	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
@@ -238,7 +273,7 @@ SpriteDescs:
     dc.w 0x0090        ; Y coord (+ 128)
     dc.b %00001111     ; Width (bits 0-1) and height (bits 2-3) in tiles	(00 - 8x, 01 - 16x, 10 - 24x,11 - 32x))
     dc.b 0x01          ; Index of next sprite (linked list)
-    dc.b %0001000          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7) | Horizontal - 01, Vertical 10, Vert. & Hori. - 11 |
+    dc.b %0000000          ; H/V flipping (bits 3/4), palette index (bits 5-6), priority (bit 7) | Horizontal - 01, Vertical 10, Vert. & Hori. - 11 |
     dc.b SpriteDataTileID ; Index of first tile
     dc.w 0x0115        ; X coord (+ 128)
 
@@ -249,5 +284,20 @@ SpriteDescs:
 
 StringTest:
 	dc.b "HELLO WORLD!",0
+
+String1:
+	dc.b "X:00",0
+
+String2:
+	dc.b "X:10",0
+
+String3:
+	dc.b "X:20",0
+
+String4:
+	dc.b "X:30",0
+
+StringPlaneB:
+	dc.b "PLANE B",0
 
 __endMain:

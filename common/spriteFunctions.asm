@@ -1,6 +1,6 @@
 	include 'common\spriteData.asm'
 
-LoadSprite:
+	LoadSprite:
    ; a0 - Font address (l)
    ; d0 - VRAM address (w)
    ; d1 - Num chars (w)

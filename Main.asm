@@ -138,13 +138,13 @@ GameLoop:
 	btst	#pad_button_left, _player1_memory
 	bne		@NotLeft
 	sub.w   #movement_speed, d4
-	sub.w   #movement_speed, d6    
+	add.w   #movement_speed, d6    
 	@NotLeft:
 	
 	btst	#pad_button_right, _player1_memory
 	bne		@NotRight
 	add.w   #movement_speed, d4
-	add.w   #movement_speed, d6    
+	sub.w   #movement_speed, d6    
 	@NotRight:
 	
 	btst	#pad_button_a, _player1_memory
@@ -203,6 +203,7 @@ GameLoop:
 
 	move.l  #vdp_write_hscroll, vdp_control ; Write to start of hscroll data
 	move.w  d6, vdp_data                    ; Write hscroll value
+
 
 	jsr    WaitVBlankEnd   ; Wait for end of vblank
 
